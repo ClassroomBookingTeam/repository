@@ -1,10 +1,12 @@
 (ns server.appointments.v1.api
   (:require [clojure.spec.alpha :as s]
+            [clojure.tools.logging :as log]
             [ring.util.response :as rr]
             [server.appointments.v1.db :as db.appointments]
             [server.const :as const]
             [server.events.v1.db :as db.events]
-            [server.spec :as spec]))
+            [server.spec :as spec]
+            [server.users.v1.db :as db.users]))
 
 (s/def #sdkw :appointment-param/event ::spec/id)
 (s/def #sdkw :appointment-param/date-from ::spec/->inst)
@@ -50,3 +52,27 @@
     (-> (rr/response response)
         (rr/status 200))))
 
+(s/def :create-appointment/params
+  (s/keys :req-un [#sdkw :appointment-param/event]))
+
+(defn create-appointment
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        data (:params request)
+
+        user-id (:auth-user-id ctx)
+        event-id (:event data)
+
+        prepared-data (assoc data
+                             :fk-user-id user-id
+                             :fk-event-id event-id)
+        appointment-id (:appointment/id (db.appointments/create-appointment ds prepared-data))
+        appointment (db.appointments/get-by-id ds appointment-id)
+        user (db.users/get-by-id ds user-id)
+        event (db.events/get-by-id ds event-id)]
+    (log/info :msg "Создана запись на событие"
+              :appointment appointment)
+    (-> (rr/response (assoc appointment
+                            :event event
+                            :user user))
+        (rr/status 201))))
