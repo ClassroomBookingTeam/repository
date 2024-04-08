@@ -31,7 +31,22 @@
             (if (seq errors)
               (-> (rr/response errors)
                   (rr/status 400))
-              (v1.api/create-event ctx request)))))
+              (v1.api/create-event ctx request))))
+
+        (cc/PATCH "/:id/" {:as request}
+          (let [ctx rt/*ctx*
+
+                {:keys [errors request]}
+                (u/conform-request-params {:spec :update-event/params
+                                           :request request})]
+            (log/info :msg "Вызов обновления события"
+                      :auth-user-id (:auth-user-id ctx)
+                      :params (:params request)
+                      :errors errors)
+            (if (seq errors)
+              (-> (rr/response errors)
+                  (rr/status 400))
+              (v1.api/update-event ctx request)))))
 
       (cc/wrap-routes middleware.auth/wrap-non-rpc-auth)
       (cc/wrap-routes middleware.safety-wrapper/wrap-with-safety-wrapper)))
