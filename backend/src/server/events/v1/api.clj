@@ -196,3 +196,32 @@
       (-> (rr/response [{:message "Событие не найдено"
                          :path "id"}])
           (rr/status 404)))))
+
+(s/def :get-event/params
+  (s/keys :req-un [::spec/id]))
+
+(defn get-event
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        data (:params request)
+        current-user-id (:auth-user-id ctx)
+        event-id (:id data)
+        event (db.events/get-by-id ds event-id)
+        appointments (db.appointments/get-events-appointments ds #{event-id})
+        appointments-cnt (count appointments)
+        current-user-record? (->> appointments
+                                  (filter #(= (:appointment/fk-user-id %)
+                                              current-user-id))
+                                  first
+                                  :appointment/id)]
+    (if event
+      (-> (rr/response (assoc event
+                              :event/appointments-count appointments-cnt
+                              :event/appointment-id current-user-record?
+                              :event/remaining-appointments (- (:event/max-appointments event)
+                                                               appointments-cnt)))
+          (rr/status 200))
+      (-> (rr/response [{:message "Событие не найдено"
+                         :path "id"}])
+          (rr/status 404)))))
+
