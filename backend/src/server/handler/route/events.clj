@@ -47,6 +47,21 @@
                   (rr/status 400))
               (v1.api/create-event ctx request))))
 
+        (cc/GET "/:id/" {:as request}
+          (let [ctx rt/*ctx*
+
+                {:keys [errors request]}
+                (u/conform-request-params {:spec :get-event/params
+                                           :request request})]
+            (log/info :msg "Вызов получения события"
+                      :auth-user-id (:auth-user-id ctx)
+                      :params (:params request)
+                      :errors errors)
+            (if (seq errors)
+              (-> (rr/response errors)
+                  (rr/status 400))
+              (v1.api/get-event ctx request))))
+
         (cc/PATCH "/:id/" {:as request}
           (let [ctx rt/*ctx*
 
