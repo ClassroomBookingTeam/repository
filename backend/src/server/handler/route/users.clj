@@ -2,6 +2,7 @@
   (:require [compojure.core :as cc]
             [ring.util.response :as rr]
             [server.appointments.v1.api :as v1.api.appointments]
+            [server.events.v1.api :as v1.api.events]
             [server.handler.middleware.auth :as middleware.auth]
             [server.handler.middleware.safety-wrapper :as middleware.safety-wrapper]
             [server.runtime :as rt]
@@ -21,6 +22,22 @@
           (let [ctx rt/*ctx*]
             (v1.api/get-current-user ctx (:auth-user-id rt/*ctx*))))
 
+        (cc/GET "/events/" {:as request}
+          (let [ctx rt/*ctx*
+
+                {:keys [errors request]}
+                (u/conform-request-params {:spec :list-events/params
+                                           :request request})]
+            (log/info :msg "Вызов получения списка событий пользователя"
+                      :params (:params request)
+                      :auth-user-id (:auth-user-id ctx)
+                      :errors errors)
+            (if (seq errors)
+              (-> (rr/response errors)
+                  (rr/status 400))
+              (v1.api.events/list-events ctx
+                                         (assoc-in request
+                                                   [:params :user-ids] #{(:auth-user-id ctx)})))))
         (cc/GET "/appointments/" {:as request}
           (let [ctx rt/*ctx*
 
