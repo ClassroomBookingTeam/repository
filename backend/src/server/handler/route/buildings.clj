@@ -17,6 +17,9 @@
 
 (cc/defroutes routes-v1
   (-> (cc/context "/v1/buildings" []
+        (cc/GET "/" []
+          (let [ctx rt/*ctx*]
+            (v1.api/list-buildings ctx nil)))
 
         (cc/GET "/:id/rooms/" {:as request}
           (let [ctx rt/*ctx*
