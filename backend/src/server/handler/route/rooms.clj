@@ -16,6 +16,21 @@
 
 (cc/defroutes routes-v1
   (-> (cc/context "/v1/rooms" []
+        (cc/GET "/" {:as request}
+          (let [ctx rt/*ctx*
+
+                {:keys [errors request]}
+                (u/conform-request-params {:spec :list-rooms/params
+                                           :request request})]
+            (log/info :msg "Вызов получения списка аудиторий"
+                      :auth-user-id (:auth-user-id ctx)
+                      :params (:params request)
+                      :errors errors)
+            (if (seq errors)
+              (-> (rr/response errors)
+                  (rr/status 400))
+              (v1.api/list-rooms ctx request))))
+
         (cc/GET "/:id/" {:as request}
           (let [ctx rt/*ctx*
 

@@ -5,6 +5,35 @@
             [server.rooms.v1.db :as db.rooms]
             [server.spec :as spec]))
 
+(s/def :list-rooms/params
+  (s/keys :opt-un [::spec/page
+                   ::spec/page-size
+                   ::spec/available-at]))
+
+(defn list-rooms
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        request-data (:params request)
+
+        page (:page request-data 1)
+        page-size (:page-size request-data const/DEFAULT_QUERY_LIMIT)
+
+        prepared-data {:available-at (:available-at request-data)
+                       :offset (* page-size (dec page))
+                       :limit page-size}
+
+        rooms (db.rooms/list-rooms ds prepared-data)
+        total-count (db.rooms/count-rooms ds prepared-data)
+
+        response {:count total-count
+                  :next (when (= (count rooms) page-size)
+                          (inc page))
+                  :previous (when (> page 1)
+                              (dec page))
+                  :results rooms}]
+    (-> (rr/response response)
+        (rr/status 200))))
+
 (s/def :get-room/params
   (s/keys :req-un [::spec/id]))
 
