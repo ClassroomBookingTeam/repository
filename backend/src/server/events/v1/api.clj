@@ -4,9 +4,18 @@
             [medley.core :as medley]
             [ring.util.response :as rr]
             [server.appointments.v1.db :as db.appointments]
+            [server.const :as const]
             [server.events.v1.db :as db.events]
             [server.spec :as spec]
-            [server.time :as time]))
+            [server.time :as time]
+            [superstring.core :as string]))
+
+(defn- coerce-room-id
+  [room-id]
+  (when-not (string/blank? room-id)
+    (->> (string/split room-id #",")
+         (map (partial s/conform ::spec/id))
+         (filter uuid?))))
 
 (s/def #sdkw :event-param/room-id string?)
 (s/def #sdkw :event-param/room ::spec/id)
@@ -18,6 +27,66 @@
 (s/def #sdkw :event-param/user-ids (s/coll-of ::spec/id))
 (s/def #sdkw :event-param/search string?)
 (s/def #sdkw :event-param/building-id ::spec/id)
+
+(s/def :list-events/params
+  (s/keys :opt-un [#sdkw :event-param/room-id
+                   #sdkw :event-param/date-from
+                   #sdkw :event-param/date-to
+                   #sdkw :event-param/user-ids
+                   #sdkw :event-param/search
+                   #sdkw :event-param/building-id
+                   ::spec/page
+                   ::spec/page-size]))
+
+(defn list-events
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        request-data (:params request)
+        current-user-id (:auth-user-id ctx)
+
+        page (or (:page request-data) 1)
+        page-size (:page-size request-data const/DEFAULT_QUERY_LIMIT)
+        room-id (coerce-room-id (:room-id request-data))
+
+        prepared-data {:room-id room-id
+                       :user-ids (:user-ids request-data)
+                       :search (:search request-data)
+                       :building-id (:building-id request-data)
+                       :date-from (:date-from request-data)
+                       :date-to (:date-to request-data)
+                       :offset (* page-size (dec page))
+                       :limit page-size}
+
+        events (db.events/list-events ds prepared-data)
+        total-count (db.events/count-events ds prepared-data)
+        event-ids (map :event/id events)
+        event-id=>appointments (->> (db.appointments/get-events-appointments ds event-ids)
+                                    (group-by :appointment/fk-event-id))
+
+        response {:count total-count
+                  :next (when (> total-count
+                                 (* page page-size))
+                          (inc page))
+                  :previous (when (> page 1)
+                              (dec page))
+                  :results (reduce (fn [acc e]
+                                     (let [appointments (event-id=>appointments (:event/id e))
+                                           appointments-cnt (count appointments)
+                                           max-appointments (:event/max-appointments e)
+                                           remains (- max-appointments appointments-cnt)
+                                           current-user-record? (->> appointments
+                                                                     (filter #(= (:appointment/fk-user-id %)
+                                                                                 current-user-id))
+                                                                     first
+                                                                     :appointment/id)]
+                                       (conj acc (assoc e
+                                                        :event/appointments-count appointments-cnt
+                                                        :event/remaining-appointments remains
+                                                        :event/appointment-id current-user-record?))))
+                                   []
+                                   events)}]
+    (-> (rr/response response)
+        (rr/status 200))))
 
 (s/def :create-event/params
   (s/keys :req-un [#sdkw :event-param/room
