@@ -1,0 +1,16 @@
+{:linters {:missing-docstring {:level :warning}
+           :unsorted-required-namespaces {:level :warning}
+           :deprecated-ns {:level :warning
+                           :namespaces [clojure.string]}
+           :deprecated-var {:level :warning}
+           :single-key-in {:level :warning}
+           :shadowed-var {:level :warning
+                          :exclude [ns]}
+           :unresolved-symbol {:skip-args [clojure.spec.alpha/def]}
+           :consistent-alias {:aliases {clojure.string string
+                                        superstring.core string
+                                        server.util u}}
+           :unused-private-var {:level :warning}}
+ :lint-as {slingshot.slingshot/try+ clj-kondo.lint-as/def-catch-all
+           server.spec/with-conformer clj-kondo.lint-as/def-catch-all}
+ :hooks {:analyze-call {slingshot.slingshot/try+ lint-hooks/try+}}}
