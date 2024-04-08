@@ -76,3 +76,38 @@
                             :event event
                             :user user))
         (rr/status 201))))
+
+(s/def :delete-appointment/params
+  (s/keys :req-un [::spec/id]))
+
+(defn delete-appointment
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        data (:params request)
+
+        appointment-id (:id data)
+
+        appointment (db.appointments/get-by-id ds appointment-id)]
+    (if appointment
+      (let [_ (db.appointments/delete-appointment ds appointment-id)
+            event (db.events/get-by-id ds (:appointment/fk-event-id appointment))]
+        (log/info :msg "Удалена запись на событие"
+                  :appointment appointment)
+        (-> (rr/response event)
+            (rr/status 200)))
+      (-> (rr/response [{:message "Запись не найдена"
+                         :path "id"}])
+          (rr/status 404)))))
+
+(s/def :get-event-appointments/params
+  (s/keys :req-un [::spec/id]))
+
+(defn get-event-appointments
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        data (:params request)
+
+        event-id (:id data)
+        event-appointments (db.appointments/get-events-appointments ds #{event-id})]
+    (-> (rr/response event-appointments)
+        (rr/status 200))))
