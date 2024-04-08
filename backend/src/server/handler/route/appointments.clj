@@ -29,6 +29,21 @@
             (if (seq errors)
               (-> (rr/response errors)
                   (rr/status 400))
-              (v1.api/create-appointment ctx request)))))
+              (v1.api/create-appointment ctx request))))
+
+        (cc/DELETE "/:id/" {:as request}
+          (let [ctx rt/*ctx*
+
+                {:keys [errors request]}
+                (u/conform-request-params {:spec :delete-appointment/params
+                                           :request request})]
+            (log/info :msg "Вызов получения записи"
+                      :auth-user-id (:auth-user-id ctx)
+                      :params (:params request)
+                      :errors errors)
+            (if (seq errors)
+              (-> (rr/response errors)
+                  (rr/status 400))
+              (v1.api/delete-appointment ctx request)))))
       (cc/wrap-routes middleware.auth/wrap-non-rpc-auth)
       (cc/wrap-routes middleware.safety-wrapper/wrap-with-safety-wrapper)))
