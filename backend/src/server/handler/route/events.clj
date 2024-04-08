@@ -17,6 +17,20 @@
 (cc/defroutes routes-v1
   "Routes for getting or downloading arbitrary blobs by uid or file name."
   (-> (cc/context "/v1/events" []
+        (cc/GET "/" {:as request}
+          (let [ctx rt/*ctx*
+
+                {:keys [errors request]}
+                (u/conform-request-params {:spec :list-events/params
+                                           :request request})]
+            (log/info :msg "Вызов получения списка событий"
+                      :auth-user-id (:auth-user-id ctx)
+                      :params (:params request)
+                      :errors errors)
+            (if (seq errors)
+              (-> (rr/response errors)
+                  (rr/status 400))
+              (v1.api/list-events ctx request))))
 
         (cc/POST "/" {:as request}
           (let [ctx rt/*ctx*
