@@ -5,6 +5,21 @@
             [server.rooms.v1.db :as db.rooms]
             [server.spec :as spec]))
 
+(s/def :get-room/params
+  (s/keys :req-un [::spec/id]))
+
+(defn get-room
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        data (:params request)
+        room-id (:id data)
+        room (db.rooms/get-by-id ds room-id)]
+    (if room
+      (-> (rr/response room)
+          (rr/status 200))
+      (-> (rr/response (format "Room with id %s not found" room-id))
+          (rr/status 404)))))
+
 (s/def :get-building-rooms/params
   (s/keys :req-un [::spec/id]
           :opt-un [::spec/page
