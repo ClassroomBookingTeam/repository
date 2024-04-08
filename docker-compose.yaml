@@ -1,0 +1,17 @@
+version: "3.1"
+
+services:
+  server:
+    image: qr_server
+    build:
+      context: ./backend/
+      dockerfile: ../Docker/alpine-server/Dockerfile
+    ports:
+      - 9501:9501
+    volumes:
+      - ./backend/resources/:/etc/bmstu/
+    networks:
+      - qrServer
+networks:
+  qrServer:
+    driver: bridge
