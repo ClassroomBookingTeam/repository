@@ -225,3 +225,24 @@
                          :path "id"}])
           (rr/status 404)))))
 
+(s/def :delete-event/params
+  (s/keys :req-un [::spec/id]))
+
+(defn delete-event
+  [ctx request]
+  (let [ds (:pg-ds ctx)
+        data (:params request)
+        event-id (:id data)
+        event (db.events/get-by-id-light ds event-id)
+        master-id (:event/master-id event)]
+    (if event
+      (do
+        (log/info :msg "Удалено событие и все записи на него"
+                  :event event)
+        (db.events/delete-event ds event-id master-id)
+        (-> (rr/response "Deleted")
+            (rr/status 200)))
+      (-> (rr/response [{:message "Событие не найдено"
+                         :path "id"}])
+          (rr/status 404)))))
+
