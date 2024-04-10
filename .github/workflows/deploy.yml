@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - feature/ci-52
+      - develop
   workflow_dispatch:
       
 jobs:
