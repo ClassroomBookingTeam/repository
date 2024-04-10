@@ -1,0 +1,28 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - feature/ci-52
+  workflow_dispatch:
+      
+jobs:
+  test:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Clear Destination Directory
+        run: rm -rf /var/repository/*
+      - name: Copy Sources
+        run: cp -a . /var/repository/
+      - name: Setup Environment
+        working-directory: /var/repository/
+        run: |
+          echo "VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}" > frontend/.env
+      - name: Recreate Containers
+        working-directory: /var/repository/
+        run: docker compose up -d --build
+      - name: Restart Web Server
+        working-directory: /var/repository/
+        run: docker compose restart caddy

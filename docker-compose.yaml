@@ -18,6 +18,22 @@ services:
       dockerfile: ../Docker/frontend/Dockerfile
     networks:
       - qrServer
+  caddy:
+    image: caddy:2.7.6-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - qrServer
 networks:
   qrServer:
     driver: bridge
+volumes:
+  caddy-data:
+  caddy-config:
