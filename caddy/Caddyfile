@@ -1,0 +1,18 @@
+www.unirooms.site {
+  redir https://unirooms.site{uri}
+}
+
+unirooms.site {
+  handle /api/* {
+    uri strip_prefix /api
+    reverse_proxy server:9501
+  }
+
+  handle {
+    reverse_proxy frontend:3000
+  }
+
+  handle_errors {
+    respond "{http.error.status_code} {http.error.status_text}"
+  }
+}
