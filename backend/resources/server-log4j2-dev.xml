@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO" monitorInterval="60">
+  <Properties>
+    <Property name="basePath">/var/log/bmstu</Property>
+  </Properties>
+  <Appenders>
+    <!-- log to stdout only DEBUG and higher -->
+    <Console name="stdout" target="SYSTEM_OUT">
+      <PatternLayout>
+	<pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c - %msg%n</pattern>
+      </PatternLayout>
+      <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY" />
+    </Console>
+
+    <!-- trace.log contains ALL levels -->
+    <RollingFile name="trace" fileName="${basePath}/trace.log"
+		 filePattern="${basePath}/trace-%d{yyyy-MM-dd}.log">
+      <PatternLayout>
+	<pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c - %msg%n</pattern>
+      </PatternLayout>
+      <Policies>
+	<TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+      </Policies>
+      </RollingFile>
+
+    <!-- error.log contains WARN and higher -->
+    <RollingFile name="error" fileName="${basePath}/error.log"
+		 filePattern="${basePath}/error-%d{yyyy-MM-dd}.log">
+      <PatternLayout>
+	<pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c - %msg%n</pattern>
+      </PatternLayout>
+      <Policies>
+	<TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+      </Policies>
+      <ThresholdFilter level="WARN"  onMatch="ACCEPT" onMismatch="DENY"/>
+    </RollingFile>
+
+    <RollingFile name="payload" fileName="${basePath}/payload.log"
+		 filePattern="${basePath}/payload-%d{yyyy-MM-dd}.log">
+      <PatternLayout>
+	<pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c - %msg%n</pattern>
+      </PatternLayout>
+      <Policies>
+	<TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+      </Policies>
+    </RollingFile>
+  </Appenders>
+
+  <Loggers>
+    <!-- development use -->
+    <Root level="INFO">
+      <AppenderRef ref="trace"></AppenderRef>
+      <AppenderRef ref="error"></AppenderRef>
+      <AppenderRef ref="stdout"></AppenderRef>
+    </Root>
+    <Logger name="server" level="TRACE"/>
+    <Logger name="payload.server" level="TRACE" additivity="false">
+      <AppenderRef ref="payload"></AppenderRef>
+    </Logger>
+  </Loggers>
+</Configuration>

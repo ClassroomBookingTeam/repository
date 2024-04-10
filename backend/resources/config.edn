@@ -1,0 +1,23 @@
+{:jwt-secret "secret"
+ :enabled-credential-verifiers #{:cas :default}
+
+ :main-db {:migrations-table "ClassroomBooking.schema_migrations"
+           :migration-dir "migrations"
+
+           :connection-timeout 10000
+           :auto-commit true
+           :validation-timeout 5000
+           :idle-timeout 600000
+           :max-lifetime 1800000
+           :minimum-idle 10
+           :maximum-pool-size 10
+           :pool-name "main_pool"
+           :adapter "pgjdbc-ng"
+           :username "postgres"
+           :password "postgres"
+           :database-name "main_db"
+           :server-name "db"
+           :port-number 5432
+           :register-mbeans false
+           :jdbc-url "jdbc:pgsql://db:5432/main_db"
+           :leak-detection-threshold 30000}}
