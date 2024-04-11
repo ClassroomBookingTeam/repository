@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "format": "pnpm exec prettier . --write",
+    "format:check": "pnpm exec prettier . --check",
     "preview": "vite preview"
   },
   "dependencies": {

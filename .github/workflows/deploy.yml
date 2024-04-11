@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - feature/lint-frontend-ci
   workflow_dispatch:
       
 jobs:
