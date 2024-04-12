@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - develop
+      - feature/swagger
   workflow_dispatch:
-      
+
 jobs:
   checkout:
     runs-on: self-hosted
