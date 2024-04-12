@@ -18,6 +18,14 @@ services:
       dockerfile: ../Docker/frontend/Dockerfile
     networks:
       - qrServer
+  swagger:
+    image: swaggerapi/swagger-ui:v3.23.8
+    volumes:
+      - ./swagger/swagger.yml:/swagger.yml
+    environment:
+      SWAGGER_JSON: /swagger.yml
+    networks:
+      - qrServer
   caddy:
     image: caddy:2.7.6-alpine
     restart: unless-stopped
