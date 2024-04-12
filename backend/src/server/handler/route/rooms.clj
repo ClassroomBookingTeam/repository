@@ -1,12 +1,12 @@
 (ns server.handler.route.rooms
-  (:require [clojure.tools.logging :as log]
-            [compojure.core :as cc]
+  (:require [compojure.core :as cc]
             [ring.util.response :as rr]
             [server.handler.middleware.auth :as middleware.auth]
             [server.handler.middleware.safety-wrapper :as middleware.safety-wrapper]
             [server.rooms.v1.api :as v1.api]
             [server.runtime :as rt]
-            [server.util :as u]))
+            [server.util :as u]
+            [clojure.tools.logging :as log]))
 
 (set! *warn-on-reflection* true)
 
