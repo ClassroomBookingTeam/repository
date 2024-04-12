@@ -25,9 +25,6 @@ const LoginFormContainer: FC<Props> = ({ onSuccess }) => {
 
   return (
     <LoginForm onSubmit={loginMutation.mutateAsync} form={form}>
-      <Button type="button" variant="secondary">
-        CAS
-      </Button>
       <Button type="submit" disabled={loginMutation.isPending}>
         Войти
       </Button>
