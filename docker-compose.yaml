@@ -1,0 +1,63 @@
+version: "3.1"
+
+services:
+  server:
+    image: qr_server
+    build:
+      context: ./backend/
+      dockerfile: ../Docker/alpine-server/Dockerfile
+    ports:
+      - 9501:9501
+    volumes:
+      - ./backend/resources/:/etc/bmstu/
+    networks:
+      - qrServer
+    depends_on:
+      - db
+  db:
+    build:
+      context: ./Docker/db
+      dockerfile: ./Dockerfile
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - qrServer
+  frontend:
+    build:
+      context: ./frontend/
+      dockerfile: ../Docker/frontend/Dockerfile
+    networks:
+      - qrServer
+  swagger:
+    image: swaggerapi/swagger-ui:v3.23.8
+    volumes:
+      - ./swagger/swagger.yml:/swagger.yml
+    environment:
+      SWAGGER_JSON: /swagger.yml
+    networks:
+      - qrServer
+  caddy:
+    image: caddy:2.7.6-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - qrServer
+networks:
+  qrServer:
+    driver: bridge
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

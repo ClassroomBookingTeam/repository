@@ -1,0 +1,15 @@
+.calendar :global(.rbc-day-slot .rbc-events-container) {
+  margin-right: 0;
+}
+
+.calendar :global(.rbc-allday-cell) {
+  display: none;
+}
+
+.calendar :global(.rbc-event-content) {
+  overflow: hidden;
+}
+
+.calendar :global(.rbc-event-label) {
+  white-space: pre-line;
+}

@@ -1,0 +1,843 @@
+openapi: 3.0.3
+info:
+  title: REST-диспетчерская
+  version: 0.1.0
+tags:
+  - name: session
+    description: Сессия
+  - name: user
+    description: Пользователь
+  - name: building
+    description: Корпус
+  - name: room
+    description: Аудитория
+  - name: event
+    description: Событие
+  - name: appointment
+    description: Запись
+  - name: recurrence
+    description: Повторение
+paths:
+  /v1/session/:
+    post:
+      tags:
+        - session
+      summary: Создать сессию (авторизоваться)
+      description: |
+        Для авторизации используется `HttpOnly`, `secure` кука, в которой содержится токен авторизации и которая выставляется бэкендом при успешной авторизации. 
+
+        Далее эта кука передается фронтом с каждым запросом.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  example: "qwerty"
+      responses:
+        "201":
+          description: Сессия успешно создана
+          headers:
+            Set-Cookie:
+              description: "jwt=xxyyzz; Path: /; HttpOnly; secure"
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          description: Почта или пароль неверные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArrayOfErrors"
+    delete:
+      security:
+        - cookieAuth: []
+      tags:
+        - session
+      summary: Удалить сессию (выйти из аккаунта)
+      description: |
+        Токен авторизации и кука сбрасываются.
+      responses:
+        "200":
+          description: Сессия успешно завершена
+          headers:
+            Set-Cookie:
+              description: "jwt=deleted; Path: /; HttpOnly; secure"
+              schema:
+                type: string
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/users/current/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - user
+      summary: Получить текущего пользователя
+      responses:
+        "200":
+          description: Текущий пользователь
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/users/current/events/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - user
+      summary: Получить список событий текущего пользователя
+      description: |
+        Сортировка по умолчанию — от старых к новым (по неубыванию `date_from`).
+      parameters:
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/page"
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, события после которой нужно найти
+          example: "2024-02-05T11:58:26+07:00"
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, события до которой нужно найти
+          example: "2024-02-05T11:58:26+07:00"
+        - in: query
+          name: room_id
+          schema:
+            type: string
+            format: uuid
+          required: false
+          description: Уникальный идентификатор(ы) аудиторий, события в которых нужно найти
+          example: xxyyzz,aabbcc
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+          description: Поиск по имени, фамилии или отчеству преподавателя
+        - in: query
+          name: building_id
+          schema:
+            type: string
+          required: false
+          description: Уникальный идентификатор(ы) корпуса, где проводится событие
+          example: xxyyzz,aabbcc
+      responses:
+        "200":
+          description: Список событий
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      results:
+                        $ref: "#/components/schemas/ArrayOfEvents"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/users/current/appointments/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - user
+      summary: Получить список записей текущего пользователя
+      description: |
+        Сортировка по умолчанию — от старых к новым (по неубыванию `event.date_from`).
+      parameters:
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/page"
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, записи после которой нужно найти
+          example: "2024-02-05T11:58:26+07:00"
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, записи до которой нужно найти
+          example: "2024-02-05T11:58:26+07:00"
+      responses:
+        "200":
+          description: Список событий
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      results:
+                        $ref: "#/components/schemas/ArrayOfAppointments"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/buildings/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - building
+      summary: Получить список корпусов
+      responses:
+        "200":
+          description: Список корпусов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArrayOfBuildings"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/rooms/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - room
+      summary: Получить список аудиторий
+      description: |
+        Сортировка по умолчанию по трем ключам: по названию корпуса, по возрастанию номера этажа и возрастанию номера аудитории (чтобы в массиве сначала были все аудитории первого этажа, отсортированные по возрастанию номеров, потом — аудитории второго этажа и так далее).
+      parameters:
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/page"
+        - in: query
+          name: available_at
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, в которую аудитория свободна
+          example: "2024-02-05T11:58:26+07:00"
+      responses:
+        "200":
+          description: Список аудиторий
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      results:
+                        $ref: "#/components/schemas/ArrayOfRooms"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/buildings/{id}/rooms/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - building
+      summary: Получить список аудиторий корпуса
+      description: |
+        Сортировка по умолчанию по двум ключам: по возрастанию номера этажа и возрастанию номера аудитории (чтобы в массиве сначала были все аудитории первого этажа, отсортированные по возрастанию номеров, потом — аудитории второго этажа и так далее).
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/page"
+        - in: query
+          name: available_at
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, в которую аудитория свободна
+          example: "2024-02-05T11:58:26+07:00"
+      responses:
+        "200":
+          description: Список аудиторий
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      results:
+                        $ref: "#/components/schemas/ArrayOfRooms"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/rooms/{id}/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - room
+      summary: Получить аудиторию
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Аудитория
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+  /v1/events/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - event
+      summary: Получить список событий
+      description: |
+        Сортировка по умолчанию — от старых к новым (по неубыванию `date_from`).
+      parameters:
+        - $ref: "#/components/parameters/pageSize"
+        - $ref: "#/components/parameters/page"
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, события после которой нужно найти
+          example: "2024-02-05T11:58:26+07:00"
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Дата со временем, события до которой нужно найти
+          example: "2024-02-05T11:58:26+07:00"
+        - in: query
+          name: room_id
+          schema:
+            type: string
+            format: uuid
+          required: false
+          description: Уникальный идентификатор(ы) аудиторий, события в которых нужно найти
+          example: xxyyzz,aabbcc
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+          description: Поиск по имени, фамилии или отчеству преподавателя
+        - in: query
+          name: building_id
+          schema:
+            type: string
+          required: false
+          description: Уникальный идентификатор(ы) корпуса, где проводится событие
+          example: xxyyzz,aabbcc
+      responses:
+        "200":
+          description: Список событий
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      results:
+                        $ref: "#/components/schemas/ArrayOfEvents"
+        "403":
+          $ref: "#/components/responses/403"
+    post:
+      security:
+        - cookieAuth: []
+      tags:
+        - event
+      summary: Создать событие
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - date_from
+                - date_to
+              properties:
+                title:
+                  type: string
+                  description: Название события
+                  nullable: true
+                  example: Консультация по моделированию
+                room:
+                  type: string
+                  format: uuid
+                  description: Уникальный идентификатор аудитории
+                description:
+                  type: string
+                  description: Описание события
+                  nullable: true
+                  example: Суперкрутая консультация
+                date_from:
+                  type: string
+                  format: date-time
+                  description: Дата со временем начала события
+                  example: "2024-02-05T11:58:26+07:00"
+                date_to:
+                  type: string
+                  format: date-time
+                  description: Дата со временем окончания события
+                  example: "2024-02-05T11:58:26+07:00"
+                recurrence:
+                  type: string
+                  format: uuid
+                  description: Уникальный идентификатор повторения
+                  nullable: true
+                recurrence_until:
+                  type: string
+                  format: date-time
+                  description: Дата, до которой необходимо повторять событие
+                  nullable: true
+                max_appointments:
+                  type: number
+                  format: integer
+                  description: Максимальное количество записей
+                  nullable: true
+      responses:
+        "201":
+          description: Событие успешно создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/400"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/events/{id}/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - event
+      summary: Получить событие
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Событие
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+    patch:
+      security:
+        - cookieAuth: []
+      tags:
+        - event
+      summary: Обновить событие
+      description: |
+        Все поля тела запроса опциональны (обновляем только переданные).
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Название события
+                  nullable: true
+                  example: Консультация по моделированию
+                description:
+                  type: string
+                  description: Описание события
+                  nullable: true
+                  example: Суперкрутая консультация
+                date_from:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: Дата со временем начала события
+                  example: "2024-02-05T11:58:26+07:00"
+                date_to:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: Дата со временем окончания события
+                  example: "2024-02-05T11:58:26+07:00"
+                recurrence:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Уникальный идентификатор повторения
+                recurrence_until:
+                  type: string
+                  format: date-time
+                  description: Дата, до которой необходимо повторять событие
+                  nullable: true
+                max_appointments:
+                  type: number
+                  format: integer
+                  nullable: true
+                  description: Максимальное количество записей
+      responses:
+        "201":
+          description: Событие успешно создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/400"
+        "403":
+          $ref: "#/components/responses/403"
+    delete:
+      security:
+        - cookieAuth: []
+      tags:
+        - event
+      summary: Удалить событие
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Событие успешно удалено
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+  /v1/appointments/:
+    post:
+      security:
+        - cookieAuth: []
+      tags:
+        - appointment
+      summary: Создать запись
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                  format: uuid
+                  description: Уникальный идентификатор события
+      responses:
+        "201":
+          description: Запись успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          $ref: "#/components/responses/400"
+        "403":
+          $ref: "#/components/responses/403"
+  /v1/appointments/{id}/:
+    delete:
+      security:
+        - cookieAuth: []
+      tags:
+        - appointment
+      summary: Отменить запись
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Запись успешно отменена
+        "400":
+          $ref: "#/components/responses/400"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+  /v1/recurrences/:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - recurrence
+      summary: Получить список повторений
+      responses:
+        "200":
+          description: Список повторений
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArrayOfRecurrences"
+        "403":
+          $ref: "#/components/responses/403"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: jwt
+  responses:
+    "400":
+      description: Формат запроса некорректен или не выполнены условия для его успешного завершения
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfErrors"
+    "403":
+      description: Нет доступа
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfErrors"
+    "404":
+      description: Объект не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfErrors"
+  parameters:
+    id:
+      in: path
+      name: id
+      schema:
+        type: string
+        format: uuid
+      required: true
+      description: Уникальный идентификатор объекта
+    pageSize:
+      in: query
+      name: page_size
+      schema:
+        type: number
+      required: false
+      description: Максимальное количество элементов на одной странице
+      example: 25
+    page:
+      in: query
+      name: page
+      schema:
+        type: number
+      required: false
+      description: Номер запрашиваемой страницы (нумерация с 1)
+      example: 2
+  schemas:
+    PaginatedResponse:
+      type: object
+      properties:
+        count:
+          type: number
+          description: Общее количество элементов
+          example: 100
+        next:
+          type: number
+          description: Номер следующей страницы
+          nullable: true
+          example: 2
+        previous:
+          type: number
+          description: Номер предыдущей страницы
+          nullable: true
+          example: null
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Ошибка"
+        path:
+          type: string
+          example: "path.to.failed.property"
+          nullable: true
+    ArrayOfErrors:
+      type: array
+      items:
+        $ref: "#/components/schemas/Error"
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор пользователя
+        email:
+          type: string
+          format: email
+          description: Электронная почта пользователя
+        roles:
+          type: array
+          items:
+            type: string
+            example: "teacher"
+        first_name:
+          type: string
+          description: Имя пользователя
+          example: Иван
+        last_name:
+          type: string
+          description: Фамилия пользователя
+          example: Иванов
+        middle_name:
+          type: string
+          description: Отчество пользователя
+          example: Иванович
+          nullable: true
+        short_name:
+          type: string
+          description: Короткое имя пользователя
+          example: Иванов И. И.
+        full_name:
+          type: string
+          description: Полное имя пользователя
+          example: Иванов Иван Иванович
+    ArrayOfUsers:
+      type: array
+      items:
+        $ref: "#/components/schemas/User"
+    Recurrence:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор повторения
+        name:
+          type: string
+          description: Название повторения
+          example: Каждый день
+    ArrayOfRecurrences:
+      type: array
+      items:
+        $ref: "#/components/schemas/Recurrence"
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор записи
+        event:
+          $ref: "#/components/schemas/Event"
+        user:
+          $ref: "#/components/schemas/User"
+    ArrayOfAppointments:
+      type: array
+      items:
+        $ref: "#/components/schemas/Appointment"
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор события
+        user:
+          $ref: "#/components/schemas/User"
+        room:
+          $ref: "#/components/schemas/Room"
+        title:
+          type: string
+          description: Название события
+          nullable: true
+          example: Консультация по моделированию
+        description:
+          type: string
+          description: Описание события
+          nullable: true
+          example: Суперкрутая консультация
+        recurrence:
+          allOf:
+            - $ref: "#/components/schemas/Recurrence"
+            - nullable: true
+        recurrence_until:
+          type: string
+          format: date-time
+          description: Дата со временем окончания повторения
+          example: "2024-02-05T11:58:26+07:00"
+          nullable: true
+        date_from:
+          type: string
+          format: date-time
+          description: Дата со временем начала события
+          example: "2024-02-05T11:58:26+07:00"
+        date_to:
+          type: string
+          format: date-time
+          description: Дата со временем окончания события
+          example: "2024-02-05T11:58:26+07:00"
+        appointment_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Уникальный идентификатор записи текущего пользователя
+        appointments_count:
+          type: number
+          format: integer
+          description: Текущее количество записей на событие
+        max_appointments:
+          type: number
+          format: integer
+          description: Максимальное количество записей на событие
+          nullable: true
+        remaining_appointments:
+          type: number
+          format: integer
+          description: Оставшееся количество доступных записей на событие
+          nullable: true
+    ArrayOfEvents:
+      type: array
+      items:
+        $ref: "#/components/schemas/Event"
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+          example: "501л"
+        floor:
+          type: number
+          example: 5
+        building:
+          $ref: "#/components/schemas/Building"
+    ArrayOfRooms:
+      type: array
+      items:
+        $ref: "#/components/schemas/Room"
+    Building:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: УЛК
+    ArrayOfBuildings:
+      type: array
+      items:
+        $ref: "#/components/schemas/Building"
