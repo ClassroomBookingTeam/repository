@@ -12,6 +12,21 @@ services:
       - ./backend/resources/:/etc/bmstu/
     networks:
       - qrServer
+    depends_on:
+      - db
+  db:
+    build:
+      context: ./Docker/db
+      dockerfile: ./Dockerfile
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - qrServer
   frontend:
     build:
       context: ./frontend/
@@ -43,5 +58,6 @@ networks:
   qrServer:
     driver: bridge
 volumes:
+  db-data:
   caddy-data:
   caddy-config:
