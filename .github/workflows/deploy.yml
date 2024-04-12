@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - fix/compose-db
   workflow_dispatch:
 
 jobs:
