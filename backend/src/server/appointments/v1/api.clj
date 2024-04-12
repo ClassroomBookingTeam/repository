@@ -1,12 +1,12 @@
 (ns server.appointments.v1.api
   (:require [clojure.spec.alpha :as s]
-            [clojure.tools.logging :as log]
             [ring.util.response :as rr]
             [server.appointments.v1.db :as db.appointments]
             [server.const :as const]
             [server.events.v1.db :as db.events]
             [server.spec :as spec]
-            [server.users.v1.db :as db.users]))
+            [server.users.v1.db :as db.users]
+            [clojure.tools.logging :as log]))
 
 (s/def #sdkw :appointment-param/event ::spec/id)
 (s/def #sdkw :appointment-param/date-from ::spec/->inst)

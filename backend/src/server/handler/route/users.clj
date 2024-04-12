@@ -38,6 +38,7 @@
               (v1.api.events/list-events ctx
                                          (assoc-in request
                                                    [:params :user-ids] #{(:auth-user-id ctx)})))))
+
         (cc/GET "/appointments/" {:as request}
           (let [ctx rt/*ctx*
 

@@ -241,8 +241,7 @@
                   :event event)
         (db.events/delete-event ds event-id master-id)
         (-> (rr/response "Deleted")
-            (rr/status 200)))
+          (rr/status 200)))
       (-> (rr/response [{:message "Событие не найдено"
                          :path "id"}])
           (rr/status 404)))))
-

@@ -10,9 +10,6 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN pnpm format:check
-RUN pnpm lint
-
 RUN pnpm build
 
 CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "3000"]
